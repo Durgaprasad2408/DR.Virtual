@@ -7,6 +7,10 @@ import { useAuth } from '../contexts/AuthContext'
 const Register = () => {
   const [step, setStep] = useState(1)
   const navigate = useNavigate()
+// Use the configured API base URL for fetch calls
+const API_BASE_URL = import.meta.env.VITE_API_URL || (
+  import.meta.env.DEV ? 'http://localhost:5000' : 'https://tele-doctor.onrender.com'
+)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -113,7 +117,7 @@ const Register = () => {
     setSuccess('')
     
     try {
-      const response = await fetch('http://localhost:5000/api/otp/request', {
+      const response = await fetch(`${API_BASE_URL}/api/otp/request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -162,7 +166,7 @@ const Register = () => {
     setOtpError('')
     
     try {
-      const response = await fetch('http://localhost:5000/api/otp/verify', {
+      const response = await fetch(`${API_BASE_URL}/api/otp/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

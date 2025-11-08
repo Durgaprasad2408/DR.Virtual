@@ -31,6 +31,7 @@
     
     <!-- Apple PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="TeleMed" />
     
@@ -52,10 +53,7 @@
     <meta name="twitter:description" content="Secure online health consultations with real-time chat, video calling, and medical records management" />
     <meta name="twitter:image" content="/icons/icon-512x512.png" />
     
-    <!-- Security Headers -->
-    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-    <meta http-equiv="X-Frame-Options" content="DENY" />
-    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    <!-- Security Headers (Removed meta tags as they should be set via HTTP headers, which is done in vercel.json) -->
     
     <!-- Preload Critical Resources -->
     <link rel="preload" href="/call-sound.mp3" as="audio" />
