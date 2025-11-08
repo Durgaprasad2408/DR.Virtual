@@ -4,17 +4,43 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Create a transporter using environment variables
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: process.env.EMAIL_PORT || 587,
-  secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-  // Add a 10-second timeout to prevent hanging on connection issues
-  timeout: 10000,
-});
+const createTransporter = () => {
+  // For production, prefer more reliable SMTP providers
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  const config = {
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: process.env.EMAIL_PORT || 587,
+    secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+    // Add connection timeout and retry options
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
+    // Add pool options for better connection management
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100,
+  };
+
+  // For Gmail in production, add additional security options
+  if (isProduction && config.host.includes('gmail.com')) {
+    config.auth = {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    };
+    // Enable debug logging in production to help troubleshoot
+    config.debug = true;
+    config.logger = true;
+  }
+
+  return nodemailer.createTransport(config);
+};
+
+const transporter = createTransporter();
 
 // Email template for OTP
 const otpEmailTemplate = (otp) => ({
@@ -161,7 +187,7 @@ const otpEmailTemplate = (otp) => ({
 export const sendOTPMail = async (email, otp) => {
   try {
     const template = otpEmailTemplate(otp);
-    
+
     const mailOptions = {
       from: process.env.EMAIL_FROM || 'TeleMed <noreply@telemed.com>',
       to: email,
@@ -171,9 +197,11 @@ export const sendOTPMail = async (email, otp) => {
     };
 
     console.log(`Sending OTP email to: ${email}`);
+    console.log(`Using SMTP host: ${transporter.options.host}:${transporter.options.port}`);
+
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent successfully:', info.messageId);
-    
+
     return {
       success: true,
       messageId: info.messageId,
@@ -181,10 +209,28 @@ export const sendOTPMail = async (email, otp) => {
     };
   } catch (error) {
     console.error('Error sending OTP email:', error);
+    console.error('Error details:', {
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      responseCode: error.responseCode
+    });
+
+    // Provide more specific error messages
+    let errorMessage = 'Failed to send OTP email';
+    if (error.code === 'EAUTH') {
+      errorMessage = 'Email authentication failed. Please check credentials.';
+    } else if (error.code === 'ECONNREFUSED') {
+      errorMessage = 'Cannot connect to email server. Please check network settings.';
+    } else if (error.code === 'ETIMEDOUT') {
+      errorMessage = 'Email server connection timed out.';
+    }
+
     return {
       success: false,
       error: error.message,
-      message: 'Failed to send OTP email'
+      code: error.code,
+      message: errorMessage
     };
   }
 };
@@ -379,6 +425,11 @@ export const sendWelcomeEmail = async (email, firstName, role) => {
  */
 export const testEmailConfiguration = async () => {
   try {
+    console.log('Testing email configuration...');
+    console.log(`SMTP Host: ${transporter.options.host}:${transporter.options.port}`);
+    console.log(`Auth User: ${transporter.options.auth?.user ? 'Set' : 'Not set'}`);
+    console.log(`Secure: ${transporter.options.secure}`);
+
     // Verify transporter configuration
     await transporter.verify();
     console.log('Email configuration verified successfully');
@@ -388,10 +439,29 @@ export const testEmailConfiguration = async () => {
     };
   } catch (error) {
     console.error('Email configuration error:', error);
+    console.error('Error details:', {
+      code: error.code,
+      errno: error.errno,
+      syscall: error.syscall,
+      hostname: error.hostname
+    });
+
+    let errorMessage = 'Email configuration test failed';
+    if (error.code === 'EAUTH') {
+      errorMessage = 'Authentication failed. Please check email credentials.';
+    } else if (error.code === 'ENOTFOUND') {
+      errorMessage = 'SMTP server not found. Please check EMAIL_HOST.';
+    } else if (error.code === 'ECONNREFUSED') {
+      errorMessage = 'Connection refused. Please check EMAIL_PORT and firewall settings.';
+    } else if (error.code === 'ETIMEDOUT') {
+      errorMessage = 'Connection timed out. Please check network connectivity.';
+    }
+
     return {
       success: false,
       error: error.message,
-      message: 'Email configuration test failed'
+      code: error.code,
+      message: errorMessage
     };
   }
 };
