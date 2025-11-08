@@ -16,17 +16,17 @@ const createTransporter = () => {
       pass: process.env.EMAIL_PASSWORD,
     },
     // Connection settings optimized for production
-    connectionTimeout: 30000,
+    connectionTimeout: 60000,
     greetingTimeout: 30000,
-    socketTimeout: 30000,
+    socketTimeout: 60000,
     // Disable pooling for Gmail
     pool: false,
     maxConnections: 1,
     maxMessages: 100,
-    // Additional options
+    // Additional options for better compatibility
     tls: {
-      ciphers: 'SSLv3',
-      rejectUnauthorized: false
+      rejectUnauthorized: false,
+      minVersion: 'TLSv1.2'
     }
   };
 
@@ -198,15 +198,16 @@ export const sendOTPMail = async (email, otp) => {
     };
 
     console.log(`Sending OTP email to: ${email}`);
-    console.log(`Transporter service: ${transporter.options.service}`);
+    console.log(`Transporter host: ${transporter.options.host}:${transporter.options.port}`);
 
-    // Skip verification in production for faster response
+    // Skip verification entirely for faster response in production
     if (process.env.NODE_ENV === 'development') {
       try {
         await transporter.verify();
         console.log('Transporter verified successfully');
       } catch (verifyError) {
         console.warn('Transporter verification warning:', verifyError.message);
+        // Don't throw in development either - just log
       }
     }
 

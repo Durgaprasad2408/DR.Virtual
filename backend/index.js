@@ -202,7 +202,7 @@ app.get('/api/test', (req, res) => {
 
 // Routes - auth routes FIRST with separate limiter, then general limiter for other routes
 app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/otp', otpRoutes);
+app.use('/api/otp', apiLimiter, otpRoutes); // Add rate limiting to OTP routes
 app.use('/api', apiLimiter);
 app.use('/api/users', authenticateToken, userRoutes);
 app.use('/api/appointments', authenticateToken, appointmentRoutes);
