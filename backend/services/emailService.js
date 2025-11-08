@@ -26,13 +26,17 @@ const createTransporter = () => {
     maxMessages: 100,
   };
 
-  // For Gmail in production, add additional security options
-  if (isProduction && config.host.includes('gmail.com')) {
+  // For Gmail, ensure correct settings and disable pooling
+  if (config.host.includes('gmail.com')) {
+    config.port = 587;
+    config.secure = false;
+    config.requireTLS = true;
+    config.pool = false;
     config.auth = {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD,
     };
-    // Enable debug logging in production to help troubleshoot
+    // Enable debug logging to help troubleshoot
     config.debug = true;
     config.logger = true;
   }
@@ -209,6 +213,16 @@ export const sendOTPMail = async (email, otp) => {
     console.log(`Sending OTP email to: ${email}`);
     console.log(`Using SMTP host: ${transporter.options.host}:${transporter.options.port}`);
     console.log(`Transporter auth configured: ${transporter.options.auth ? 'Yes' : 'No'}`);
+    console.log(`Transporter options:`, JSON.stringify(transporter.options, null, 2));
+
+    // Test connection first
+    try {
+      await transporter.verify();
+      console.log('Transporter verified successfully');
+    } catch (verifyError) {
+      console.error('Transporter verification failed:', verifyError.message);
+      throw verifyError;
+    }
 
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent successfully:', info.messageId);
