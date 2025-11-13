@@ -1,4 +1,6 @@
 import Notification from '../models/Notification.js';
+import User from '../models/User.js';
+import { sendAppointmentRequestEmail, sendAppointmentConfirmationEmail } from './emailService.js';
 
 export const createNotification = async ({
   recipient,
@@ -7,11 +9,12 @@ export const createNotification = async ({
   title,
   message,
   data = {},
-  sendEmail = true
+  sendEmail = true,
+  emailData = {}
 }) => {
   try {
     console.log(`Creating notification: ${type} for user ${recipient}`);
-    
+
     // Create notification in database
     const notification = new Notification({
       recipient,
@@ -27,8 +30,39 @@ export const createNotification = async ({
 
     console.log(`✅ Notification created successfully: ${notification._id}`);
 
-    // Email functionality removed - only in-app notifications
-    console.log('📧 Email notification functionality removed');
+    // Send email if requested and for appointment notifications
+    if (sendEmail && (type === 'appointment_request' || type === 'appointment_confirmed')) {
+      try {
+        const recipientUser = await User.findById(recipient).select('email firstName lastName');
+
+        if (recipientUser && recipientUser.email) {
+          if (type === 'appointment_request') {
+            // Email to doctor about new appointment request
+            await sendAppointmentRequestEmail(
+              recipientUser.email,
+              `${recipientUser.firstName} ${recipientUser.lastName}`,
+              emailData.patientName,
+              emailData.appointmentDate,
+              emailData.symptoms
+            );
+          } else if (type === 'appointment_confirmed') {
+            // Email to patient about appointment confirmation
+            await sendAppointmentConfirmationEmail(
+              recipientUser.email,
+              `${recipientUser.firstName} ${recipientUser.lastName}`,
+              emailData.doctorName,
+              emailData.appointmentDate
+            );
+          }
+          console.log(`📧 Email sent successfully for ${type}`);
+        } else {
+          console.log('⚠️ Recipient email not found, skipping email');
+        }
+      } catch (emailError) {
+        console.error('❌ Failed to send email:', emailError);
+        // Don't throw error, continue with notification creation
+      }
+    }
 
     return notification;
   } catch (error) {

@@ -418,6 +418,377 @@ export const sendWelcomeEmail = async (email, firstName, role) => {
 };
 
 /**
+ * Send appointment request email to doctor
+ * @param {string} doctorEmail - Doctor's email
+ * @param {string} doctorName - Doctor's name
+ * @param {string} patientName - Patient's name
+ * @param {string} appointmentDate - Formatted appointment date
+ * @param {string} symptoms - Patient's symptoms
+ * @returns {Promise<Object>} Email sending result
+ */
+export const sendAppointmentRequestEmail = async (doctorEmail, doctorName, patientName, appointmentDate, symptoms) => {
+  try {
+    const frontendUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+
+    const template = {
+      subject: 'New Appointment Request - TeleMed',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>New Appointment Request</title>
+          <style>
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+              background-color: #f4f4f4;
+            }
+            .container {
+              background-color: white;
+              padding: 30px;
+              border-radius: 10px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            .logo {
+              font-size: 28px;
+              font-weight: bold;
+              color: #3b82f6;
+              margin-bottom: 10px;
+            }
+            .appointment-card {
+              background-color: #f8fafc;
+              padding: 20px;
+              border-radius: 8px;
+              margin: 20px 0;
+              border-left: 4px solid #3b82f6;
+            }
+            .appointment-detail {
+              margin: 10px 0;
+              display: flex;
+              justify-content: space-between;
+            }
+            .label {
+              font-weight: bold;
+              color: #374151;
+            }
+            .value {
+              color: #6b7280;
+            }
+            .view-button {
+              display: inline-block;
+              background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+              color: white;
+              padding: 12px 24px;
+              text-decoration: none;
+              border-radius: 6px;
+              font-weight: bold;
+              text-align: center;
+              margin: 20px 0;
+              transition: background-color 0.3s;
+            }
+            .view-button:hover {
+              background: linear-gradient(135deg, #2563eb, #1e40af);
+            }
+            .footer {
+              text-align: center;
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #e5e7eb;
+              color: #6b7280;
+              font-size: 12px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="logo">🏥 TeleMed</div>
+              <h2>New Appointment Request</h2>
+            </div>
+
+            <p>Hello Dr. ${doctorName},</p>
+            <p>You have received a new appointment request from a patient. Here are the details:</p>
+
+            <div class="appointment-card">
+              <div class="appointment-detail">
+                <span class="label">Patient:</span>
+                <span class="value">${patientName}</span>
+              </div>
+              <div class="appointment-detail">
+                <span class="label">Date & Time:</span>
+                <span class="value">${appointmentDate}</span>
+              </div>
+              <div class="appointment-detail">
+                <span class="label">Symptoms:</span>
+                <span class="value">${symptoms}</span>
+              </div>
+            </div>
+
+            <p>Please review this appointment request and take appropriate action.</p>
+
+            <div style="text-align: center;">
+              <a href="${frontendUrl}/appointments" class="view-button">View Appointment</a>
+            </div>
+
+            <div class="footer">
+              <p>This email was sent from TeleMed, your trusted healthcare platform.</p>
+              <p>If you have any questions, contact us at support@telemed.com</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+        TeleMed - New Appointment Request
+
+        Hello Dr. ${doctorName},
+
+        You have received a new appointment request from ${patientName}.
+
+        Appointment Details:
+        - Date & Time: ${appointmentDate}
+        - Symptoms: ${symptoms}
+
+        Please review this appointment request and take appropriate action.
+
+        View appointment: ${frontendUrl}/appointments
+
+        This email was sent from TeleMed.
+        For support, contact us at support@telemed.com
+      `
+    };
+
+    // Check if SendGrid is configured
+    if (!process.env.SENDGRID_API_KEY) {
+      console.error('SendGrid API key not configured');
+      return {
+        success: false,
+        error: 'SendGrid API key not configured',
+        message: 'Email service not configured'
+      };
+    }
+
+    const msg = {
+      to: doctorEmail,
+      from: process.env.EMAIL_FROM || 'noreply@telemed.com',
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    };
+
+    const result = await sgMail.send(msg);
+    console.log('Appointment request email sent successfully:', result[0]?.headers?.['x-message-id']);
+
+    return {
+      success: true,
+      messageId: result[0]?.headers?.['x-message-id'],
+      message: 'Appointment request email sent successfully'
+    };
+  } catch (error) {
+    console.error('Error sending appointment request email:', error);
+    return {
+      success: false,
+      error: error.message,
+      message: 'Failed to send appointment request email'
+    };
+  }
+};
+
+/**
+ * Send appointment confirmation email to patient
+ * @param {string} patientEmail - Patient's email
+ * @param {string} patientName - Patient's name
+ * @param {string} doctorName - Doctor's name
+ * @param {string} appointmentDate - Formatted appointment date
+ * @returns {Promise<Object>} Email sending result
+ */
+export const sendAppointmentConfirmationEmail = async (patientEmail, patientName, doctorName, appointmentDate) => {
+  try {
+    const template = {
+      subject: 'Appointment Confirmed - TeleMed',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Appointment Confirmed</title>
+          <style>
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+              background-color: #f4f4f4;
+            }
+            .container {
+              background-color: white;
+              padding: 30px;
+              border-radius: 10px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            .logo {
+              font-size: 28px;
+              font-weight: bold;
+              color: #10b981;
+              margin-bottom: 10px;
+            }
+            .success-icon {
+              font-size: 48px;
+              margin-bottom: 20px;
+            }
+            .appointment-card {
+              background-color: #f0fdf4;
+              padding: 20px;
+              border-radius: 8px;
+              margin: 20px 0;
+              border-left: 4px solid #10b981;
+            }
+            .appointment-detail {
+              margin: 10px 0;
+              display: flex;
+              justify-content: space-between;
+            }
+            .label {
+              font-weight: bold;
+              color: #374151;
+            }
+            .value {
+              color: #6b7280;
+            }
+            .reminder {
+              background-color: #fef3c7;
+              border: 1px solid #f59e0b;
+              padding: 15px;
+              border-radius: 8px;
+              margin: 20px 0;
+            }
+            .reminder-title {
+              color: #d97706;
+              font-weight: bold;
+              margin-bottom: 8px;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #e5e7eb;
+              color: #6b7280;
+              font-size: 12px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="logo">🏥 TeleMed</div>
+              <div class="success-icon">✅</div>
+              <h2>Appointment Confirmed!</h2>
+            </div>
+
+            <p>Hello ${patientName},</p>
+            <p>Great news! Your appointment has been confirmed by Dr. ${doctorName}. Here are the details:</p>
+
+            <div class="appointment-card">
+              <div class="appointment-detail">
+                <span class="label">Doctor:</span>
+                <span class="value">Dr. ${doctorName}</span>
+              </div>
+              <div class="appointment-detail">
+                <span class="label">Date & Time:</span>
+                <span class="value">${appointmentDate}</span>
+              </div>
+            </div>
+
+            <div class="reminder">
+              <div class="reminder-title">📅 Reminder</div>
+              <div>You will receive a reminder notification 30 minutes before your appointment. Please ensure you have a stable internet connection for your video consultation.</div>
+            </div>
+
+            <p>We're looking forward to your consultation. If you need to reschedule or have any questions, please contact us.</p>
+
+            <div class="footer">
+              <p>This email was sent from TeleMed, your trusted healthcare platform.</p>
+              <p>If you have any questions, contact us at support@telemed.com</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+        TeleMed - Appointment Confirmed
+
+        Hello ${patientName},
+
+        Great news! Your appointment has been confirmed by Dr. ${doctorName}.
+
+        Appointment Details:
+        - Doctor: Dr. ${doctorName}
+        - Date & Time: ${appointmentDate}
+
+        You will receive a reminder notification 30 minutes before your appointment.
+        Please ensure you have a stable internet connection for your video consultation.
+
+        We're looking forward to your consultation. If you need to reschedule or have any questions, please contact us.
+
+        This email was sent from TeleMed.
+        For support, contact us at support@telemed.com
+      `
+    };
+
+    // Check if SendGrid is configured
+    if (!process.env.SENDGRID_API_KEY) {
+      console.error('SendGrid API key not configured');
+      return {
+        success: false,
+        error: 'SendGrid API key not configured',
+        message: 'Email service not configured'
+      };
+    }
+
+    const msg = {
+      to: patientEmail,
+      from: process.env.EMAIL_FROM || 'noreply@telemed.com',
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    };
+
+    const result = await sgMail.send(msg);
+    console.log('Appointment confirmation email sent successfully:', result[0]?.headers?.['x-message-id']);
+
+    return {
+      success: true,
+      messageId: result[0]?.headers?.['x-message-id'],
+      message: 'Appointment confirmation email sent successfully'
+    };
+  } catch (error) {
+    console.error('Error sending appointment confirmation email:', error);
+    return {
+      success: false,
+      error: error.message,
+      message: 'Failed to send appointment confirmation email'
+    };
+  }
+};
+
+/**
  * Test email configuration
  * @returns {Promise<Object>} Test result
  */

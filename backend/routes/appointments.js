@@ -70,7 +70,12 @@ router.post('/', requireRole(['patient']), async (req, res) => {
       title: template.title,
       message: template.message,
       data: { appointmentId: appointment._id },
-      sendEmail: false
+      sendEmail: true,
+      emailData: {
+        patientName: `${req.user.firstName} ${req.user.lastName}`,
+        appointmentDate: formattedDate,
+        symptoms
+      }
     });
 
     console.log('✅ Notification created for doctor');
@@ -160,7 +165,11 @@ router.put('/:id/status', requireRole(['doctor']), async (req, res) => {
         title: template.title,
         message: template.message,
         data: { appointmentId: appointment._id },
-        sendEmail: false
+        sendEmail: true,
+        emailData: {
+          doctorName: `${req.user.firstName} ${req.user.lastName}`,
+          appointmentDate: formattedDate
+        }
       });
 
       console.log('✅ Confirmation notification sent to patient');
