@@ -54,7 +54,10 @@ router.post('/', requireRole(['doctor']), async (req, res) => {
       startDate: start,
       endDate: end,
       reason,
-      type
+      type,
+      status: 'approved', // Auto-approve leaves
+      approvedBy: req.user._id,
+      approvedAt: new Date()
     });
 
     await leaveRequest.save();
@@ -126,18 +129,93 @@ router.get('/availability/:doctorId/:date', async (req, res) => {
   }
 });
 
+// Update leave request details (doctors can edit their approved leaves)
+router.put('/:id', requireRole(['doctor']), async (req, res) => {
+  try {
+    const { startDate, endDate, reason, type } = req.body;
+
+    // Validate dates if provided
+    let updateData = {};
+    if (startDate || endDate) {
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (start && start < today) {
+        return res.status(400).json({ message: 'Start date cannot be in the past' });
+      }
+
+      if (start && end && end < start) {
+        return res.status(400).json({ message: 'End date cannot be before start date' });
+      }
+
+      if (start) updateData.startDate = start;
+      if (end) updateData.endDate = end;
+    }
+
+    if (reason) updateData.reason = reason;
+    if (type) updateData.type = type;
+
+    // Check for overlapping leave requests (excluding current leave)
+    if (startDate || endDate) {
+      const currentLeave = await DoctorLeave.findById(req.params.id);
+      if (!currentLeave) {
+        return res.status(404).json({ message: 'Leave request not found' });
+      }
+
+      const finalStart = updateData.startDate || currentLeave.startDate;
+      const finalEnd = updateData.endDate || currentLeave.endDate;
+
+      const overlappingLeave = await DoctorLeave.findOne({
+        doctor: req.user._id,
+        _id: { $ne: req.params.id }, // Exclude current leave
+        status: 'approved',
+        $or: [
+          {
+            startDate: { $lte: finalEnd },
+            endDate: { $gte: finalStart }
+          }
+        ]
+      });
+
+      if (overlappingLeave) {
+        return res.status(400).json({
+          message: 'You already have approved leave for overlapping dates'
+        });
+      }
+    }
+
+    const leaveRequest = await DoctorLeave.findOneAndUpdate(
+      { _id: req.params.id, doctor: req.user._id },
+      updateData,
+      { new: true }
+    ).populate('doctor', 'firstName lastName email');
+
+    if (!leaveRequest) {
+      return res.status(404).json({ message: 'Leave request not found' });
+    }
+
+    console.log('✅ Leave request updated successfully:', leaveRequest._id);
+    res.json(leaveRequest);
+  } catch (error) {
+    console.error('Failed to update leave request:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Update leave request status (admin only - for now, doctors can approve their own)
 router.put('/:id/status', requireRole(['doctor']), async (req, res) => {
   try {
     const { status, rejectionReason } = req.body;
-    
+
     const leaveRequest = await DoctorLeave.findOneAndUpdate(
       { _id: req.params.id, doctor: req.user._id },
-      { 
+      {
         status,
-        ...(status === 'approved' && { 
-          approvedBy: req.user._id, 
-          approvedAt: new Date() 
+        ...(status === 'approved' && {
+          approvedBy: req.user._id,
+          approvedAt: new Date()
         }),
         ...(status === 'rejected' && rejectionReason && { rejectionReason })
       },
@@ -161,15 +239,16 @@ router.delete('/:id', requireRole(['doctor']), async (req, res) => {
     const leaveRequest = await DoctorLeave.findOneAndDelete({
       _id: req.params.id,
       doctor: req.user._id,
-      status: 'pending' // Only allow deletion of pending requests
+      status: { $in: ['pending', 'approved'] } // Allow deletion of pending and approved requests
     });
 
     if (!leaveRequest) {
-      return res.status(404).json({ 
-        message: 'Leave request not found or cannot be deleted' 
+      return res.status(404).json({
+        message: 'Leave request not found or cannot be deleted'
       });
     }
 
+    console.log('✅ Leave request deleted successfully:', leaveRequest._id);
     res.json({ message: 'Leave request deleted successfully' });
   } catch (error) {
     console.error('Failed to delete leave request:', error);

@@ -16,6 +16,13 @@ const Schedule = () => {
     reason: '',
     type: 'vacation'
   })
+  const [editingLeave, setEditingLeave] = useState(null)
+  const [editLeave, setEditLeave] = useState({
+    startDate: '',
+    endDate: '',
+    reason: '',
+    type: 'vacation'
+  })
   const [loading, setLoading] = useState(false)
   const [appointments, setAppointments] = useState([])
 
@@ -67,7 +74,7 @@ const Schedule = () => {
         type: 'vacation'
       })
       setShowAddLeave(false)
-      toast.success('Leave request submitted successfully!')
+      toast.success('Leave marked successfully!')
     } catch (error) {
       console.error('Failed to submit leave request:', error)
       const message = error.response?.data?.message || 'Failed to submit leave request'
@@ -81,31 +88,63 @@ const Schedule = () => {
     try {
       await axios.delete(`/api/doctor/leave/${leaveId}`)
       setLeaveRequests(prev => prev.filter(leave => leave._id !== leaveId))
-      toast.success('Leave request deleted successfully!')
+      toast.success('Leave deleted successfully!')
     } catch (error) {
-      console.error('Failed to delete leave request:', error)
-      const message = error.response?.data?.message || 'Failed to delete leave request'
+      console.error('Failed to delete leave:', error)
+      const message = error.response?.data?.message || 'Failed to delete leave'
       toast.error(message)
     }
   }
 
-  const handleApproveLeave = async (leaveId) => {
+  const handleEditLeave = (leave) => {
+    setEditingLeave(leave._id)
+    setEditLeave({
+      startDate: new Date(leave.startDate).toISOString().split('T')[0],
+      endDate: new Date(leave.endDate).toISOString().split('T')[0],
+      reason: leave.reason,
+      type: leave.type
+    })
+  }
+
+  const handleUpdateLeave = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+
     try {
-      const response = await axios.put(`/api/doctor/leave/${leaveId}/status`, {
-        status: 'approved'
-      })
-      
-      setLeaveRequests(prev => 
-        prev.map(leave => 
-          leave._id === leaveId ? response.data : leave
+      const response = await axios.put(`/api/doctor/leave/${editingLeave}`, editLeave)
+
+      setLeaveRequests(prev =>
+        prev.map(leave =>
+          leave._id === editingLeave ? response.data : leave
         )
       )
-      toast.success('Leave request approved!')
+      setEditingLeave(null)
+      setEditLeave({
+        startDate: '',
+        endDate: '',
+        reason: '',
+        type: 'vacation'
+      })
+      toast.success('Leave updated successfully!')
     } catch (error) {
-      console.error('Failed to approve leave request:', error)
-      toast.error('Failed to approve leave request')
+      console.error('Failed to update leave:', error)
+      const message = error.response?.data?.message || 'Failed to update leave'
+      toast.error(message)
+    } finally {
+      setLoading(false)
     }
   }
+
+  const handleCancelEdit = () => {
+    setEditingLeave(null)
+    setEditLeave({
+      startDate: '',
+      endDate: '',
+      reason: '',
+      type: 'vacation'
+    })
+  }
+
 
   const getDaysInMonth = (date) => {
     const year = date.getFullYear()
@@ -182,7 +221,7 @@ const Schedule = () => {
           className="btn-primary flex items-center"
         >
           <Plus className="mr-2" size={16} />
-          Request Leave
+          Leave
         </button>
       </div>
 
@@ -349,14 +388,14 @@ const Schedule = () => {
                         </div>
                       </div>
                       <div className="flex items-center space-x-1 ml-2">
-                        {leave.status === 'pending' && (
+                        {leave.status === 'approved' && (
                           <>
                             <button
-                              onClick={() => handleApproveLeave(leave._id)}
-                              className="p-1 text-green-600 hover:bg-green-50 rounded"
-                              title="Approve"
+                              onClick={() => handleEditLeave(leave)}
+                              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                              title="Edit"
                             >
-                              ✓
+                              ✏️
                             </button>
                             <button
                               onClick={() => handleDeleteLeave(leave._id)}
@@ -366,6 +405,15 @@ const Schedule = () => {
                               <Trash2 size={12} />
                             </button>
                           </>
+                        )}
+                        {leave.status === 'pending' && (
+                          <button
+                            onClick={() => handleDeleteLeave(leave._id)}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                            title="Delete"
+                          >
+                            <Trash2 size={12} />
+                          </button>
                         )}
                       </div>
                     </div>
@@ -396,8 +444,8 @@ const Schedule = () => {
         </div>
       </div>
 
-      {/* Add Leave Modal */}
-      {showAddLeave && (
+      {/* Add/Edit Leave Modal */}
+      {(showAddLeave || editingLeave) && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -409,23 +457,34 @@ const Schedule = () => {
             className="bg-white rounded-xl shadow-2xl max-w-md w-full"
           >
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800">Request Leave</h2>
+              <h2 className="text-xl font-semibold text-gray-800">
+                {editingLeave ? 'Edit Leave' : 'Leave'}
+              </h2>
               <button
-                onClick={() => setShowAddLeave(false)}
+                onClick={() => {
+                  setShowAddLeave(false)
+                  handleCancelEdit()
+                }}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleAddLeave} className="p-6 space-y-4">
+            <form onSubmit={editingLeave ? handleUpdateLeave : handleAddLeave} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Leave Type
                 </label>
                 <select
-                  value={newLeave.type}
-                  onChange={(e) => setNewLeave({ ...newLeave, type: e.target.value })}
+                  value={editingLeave ? editLeave.type : newLeave.type}
+                  onChange={(e) => {
+                    if (editingLeave) {
+                      setEditLeave({ ...editLeave, type: e.target.value })
+                    } else {
+                      setNewLeave({ ...newLeave, type: e.target.value })
+                    }
+                  }}
                   className="input-field"
                   required
                 >
@@ -443,10 +502,17 @@ const Schedule = () => {
                   </label>
                   <input
                     type="date"
-                    value={newLeave.startDate}
-                    onChange={(e) => setNewLeave({ ...newLeave, startDate: e.target.value })}
-                    min={getMinDate()}
+                    value={editingLeave ? editLeave.startDate : newLeave.startDate}
+                    onChange={(e) => {
+                      if (editingLeave) {
+                        setEditLeave({ ...editLeave, startDate: e.target.value })
+                      } else {
+                        setNewLeave({ ...newLeave, startDate: e.target.value })
+                      }
+                    }}
+                    min={editingLeave ? undefined : getMinDate()}
                     className="input-field"
+                    disabled={editingLeave}
                     required
                   />
                 </div>
@@ -456,9 +522,15 @@ const Schedule = () => {
                   </label>
                   <input
                     type="date"
-                    value={newLeave.endDate}
-                    onChange={(e) => setNewLeave({ ...newLeave, endDate: e.target.value })}
-                    min={newLeave.startDate || getMinDate()}
+                    value={editingLeave ? editLeave.endDate : newLeave.endDate}
+                    onChange={(e) => {
+                      if (editingLeave) {
+                        setEditLeave({ ...editLeave, endDate: e.target.value })
+                      } else {
+                        setNewLeave({ ...newLeave, endDate: e.target.value })
+                      }
+                    }}
+                    min={editingLeave ? editLeave.startDate : (newLeave.startDate || getMinDate())}
                     className="input-field"
                     required
                   />
@@ -470,11 +542,17 @@ const Schedule = () => {
                   Reason
                 </label>
                 <textarea
-                  value={newLeave.reason}
-                  onChange={(e) => setNewLeave({ ...newLeave, reason: e.target.value })}
+                  value={editingLeave ? editLeave.reason : newLeave.reason}
+                  onChange={(e) => {
+                    if (editingLeave) {
+                      setEditLeave({ ...editLeave, reason: e.target.value })
+                    } else {
+                      setNewLeave({ ...newLeave, reason: e.target.value })
+                    }
+                  }}
                   rows={3}
                   className="input-field"
-                  placeholder="Please provide a reason for your leave request..."
+                  placeholder="Please provide a reason for your leave..."
                   required
                 />
               </div>
@@ -492,7 +570,10 @@ const Schedule = () => {
               <div className="flex items-center justify-end space-x-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowAddLeave(false)}
+                  onClick={() => {
+                    setShowAddLeave(false)
+                    handleCancelEdit()
+                  }}
                   className="btn-secondary"
                 >
                   Cancel
@@ -503,7 +584,7 @@ const Schedule = () => {
                   className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                 >
                   <Save className="mr-2" size={16} />
-                  {loading ? 'Submitting...' : 'Submit Request'}
+                  {loading ? 'Saving...' : (editingLeave ? 'Update Leave' : 'Mark as Leave')}
                 </button>
               </div>
             </form>

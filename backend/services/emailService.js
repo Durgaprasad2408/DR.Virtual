@@ -605,6 +605,219 @@ export const sendAppointmentRequestEmail = async (doctorEmail, doctorName, patie
 };
 
 /**
+ * Send appointment reminder email to patient
+ * @param {string} patientEmail - Patient's email
+ * @param {string} patientName - Patient's name
+ * @param {string} doctorName - Doctor's name
+ * @param {string} appointmentDate - Formatted appointment date
+ * @param {string} meetingLink - Meeting link if available
+ * @returns {Promise<Object>} Email sending result
+ */
+export const sendAppointmentReminderEmail = async (patientEmail, patientName, doctorName, appointmentDate, meetingLink = '') => {
+  try {
+    const template = {
+      subject: 'Appointment Reminder - TeleMed',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Appointment Reminder</title>
+          <style>
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+              background-color: #f4f4f4;
+            }
+            .container {
+              background-color: white;
+              padding: 30px;
+              border-radius: 10px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            .logo {
+              font-size: 28px;
+              font-weight: bold;
+              color: #f59e0b;
+              margin-bottom: 10px;
+            }
+            .reminder-icon {
+              font-size: 48px;
+              margin-bottom: 20px;
+            }
+            .appointment-card {
+              background-color: #fef3c7;
+              padding: 20px;
+              border-radius: 8px;
+              margin: 20px 0;
+              border-left: 4px solid #f59e0b;
+            }
+            .appointment-detail {
+              margin: 10px 0;
+              display: flex;
+              justify-content: space-between;
+            }
+            .label {
+              font-weight: bold;
+              color: #374151;
+            }
+            .value {
+              color: #6b7280;
+            }
+            .urgent-notice {
+              background-color: #fee2e2;
+              border: 1px solid #fecaca;
+              padding: 15px;
+              border-radius: 8px;
+              margin: 20px 0;
+            }
+            .urgent-title {
+              color: #dc2626;
+              font-weight: bold;
+              margin-bottom: 8px;
+            }
+            .join-button {
+              display: inline-block;
+              background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+              color: white;
+              padding: 12px 24px;
+              text-decoration: none;
+              border-radius: 6px;
+              font-weight: bold;
+              text-align: center;
+              margin: 20px 0;
+              transition: background-color 0.3s;
+            }
+            .join-button:hover {
+              background: linear-gradient(135deg, #2563eb, #1e40af);
+            }
+            .footer {
+              text-align: center;
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #e5e7eb;
+              color: #6b7280;
+              font-size: 12px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="logo">🏥 TeleMed</div>
+              <div class="reminder-icon">⏰</div>
+              <h2>Appointment Reminder</h2>
+            </div>
+
+            <p>Hello ${patientName},</p>
+            <p>This is a friendly reminder that your appointment is coming up soon. Here are the details:</p>
+
+            <div class="appointment-card">
+              <div class="appointment-detail">
+                <span class="label">Doctor:</span>
+                <span class="value">Dr. ${doctorName}</span>
+              </div>
+              <div class="appointment-detail">
+                <span class="label">Date & Time:</span>
+                <span class="value">${appointmentDate}</span>
+              </div>
+            </div>
+
+            <div class="urgent-notice">
+              <div class="urgent-title">⚠️ Important Reminder</div>
+              <div>Your video consultation will begin in approximately 30 minutes. Please ensure you have:</div>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>A stable internet connection</li>
+                <li>A quiet, private space</li>
+                <li>Your device camera and microphone ready</li>
+              </ul>
+            </div>
+
+            ${meetingLink ? `
+            <p>You can join the consultation using the link below when it's time:</p>
+            <div style="text-align: center;">
+              <a href="${meetingLink}" class="join-button">Join Video Consultation</a>
+            </div>
+            ` : ''}
+
+            <p>If you need to reschedule or have any questions, please contact us immediately.</p>
+
+            <div class="footer">
+              <p>This email was sent from TeleMed, your trusted healthcare platform.</p>
+              <p>If you have any questions, contact us at support@telemed.com</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+        TeleMed - Appointment Reminder
+
+        Hello ${patientName},
+
+        This is a reminder that your appointment with Dr. ${doctorName} is coming up soon.
+
+        Appointment Details:
+        - Date & Time: ${appointmentDate}
+
+        Your video consultation will begin in approximately 30 minutes.
+        Please ensure you have a stable internet connection and your device ready.
+
+        ${meetingLink ? `Join here: ${meetingLink}` : ''}
+
+        If you need to reschedule or have questions, please contact us.
+
+        This email was sent from TeleMed.
+        For support, contact us at support@telemed.com
+      `
+    };
+
+    // Check if SendGrid is configured
+    if (!process.env.SENDGRID_API_KEY) {
+      console.error('SendGrid API key not configured');
+      return {
+        success: false,
+        error: 'SendGrid API key not configured',
+        message: 'Email service not configured'
+      };
+    }
+
+    const msg = {
+      to: patientEmail,
+      from: process.env.EMAIL_FROM || 'noreply@telemed.com',
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    };
+
+    const result = await sgMail.send(msg);
+    console.log('Appointment reminder email sent successfully:', result[0]?.headers?.['x-message-id']);
+
+    return {
+      success: true,
+      messageId: result[0]?.headers?.['x-message-id'],
+      message: 'Appointment reminder email sent successfully'
+    };
+  } catch (error) {
+    console.error('Error sending appointment reminder email:', error);
+    return {
+      success: false,
+      error: error.message,
+      message: 'Failed to send appointment reminder email'
+    };
+  }
+};
+
+/**
  * Send appointment confirmation email to patient
  * @param {string} patientEmail - Patient's email
  * @param {string} patientName - Patient's name

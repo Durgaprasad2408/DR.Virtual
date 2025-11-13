@@ -1,8 +1,9 @@
 import cron from 'node-cron';
 import Appointment from '../models/Appointment.js';
 import User from '../models/User.js';
+import { sendAppointmentReminderEmail } from './emailService.js';
 
-// Check for appointments that are 1 hour away and send reminders
+// Check for appointments that are 50-60 minutes away and send reminder emails
 const checkUpcomingAppointments = async () => {
   try {
     const now = new Date();
@@ -23,13 +24,34 @@ const checkUpcomingAppointments = async () => {
 
     for (const appointment of upcomingAppointments) {
       try {
-        // Mark reminder as sent (no email functionality)
-        appointment.reminderSent = true;
-        await appointment.save();
+        // Send reminder email to patient
+        const formattedDate = appointment.appointmentDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
 
-        console.log(`✅ Reminder marked as sent for appointment ${appointment._id}`);
+        const emailResult = await sendAppointmentReminderEmail(
+          appointment.patient.email,
+          `${appointment.patient.firstName} ${appointment.patient.lastName}`,
+          `${appointment.doctor.firstName} ${appointment.doctor.lastName}`,
+          formattedDate,
+          appointment.meetingLink || ''
+        );
+
+        if (emailResult.success) {
+          // Mark reminder as sent only if email was sent successfully
+          appointment.reminderSent = true;
+          await appointment.save();
+          console.log(`✅ Reminder email sent and marked for appointment ${appointment._id}`);
+        } else {
+          console.error(`❌ Failed to send reminder email for appointment ${appointment._id}:`, emailResult.error);
+        }
       } catch (error) {
-        console.error(`❌ Failed to mark reminder for appointment ${appointment._id}:`, error);
+        console.error(`❌ Failed to process reminder for appointment ${appointment._id}:`, error);
       }
     }
   } catch (error) {
