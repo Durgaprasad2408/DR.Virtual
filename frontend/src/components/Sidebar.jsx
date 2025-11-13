@@ -1,10 +1,10 @@
 import { NavLink } from 'react-router-dom'
-import { X } from 'lucide-react'
-import { 
-  LayoutDashboard, 
-  Users, 
-  Calendar, 
-  MessageCircle, 
+import { X, LogOut } from 'lucide-react'
+import {
+  LayoutDashboard,
+  Users,
+  Calendar,
+  MessageCircle,
   User,
   Bell,
   Heart,
@@ -13,7 +13,7 @@ import {
 import { useAuth } from '../contexts/AuthContext'
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
 
   const patientNavItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -127,6 +127,20 @@ const Sidebar = ({ isOpen, onClose }) => {
               </NavLink>
             ))}
           </nav>
+
+          {/* Logout Button - Mobile Only */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => {
+                logout()
+                onClose()
+              }}
+              className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors touch-target"
+            >
+              <LogOut size={20} />
+              <span className="font-medium">Logout</span>
+            </button>
+          </div>
         </div>
       </aside>
     </>

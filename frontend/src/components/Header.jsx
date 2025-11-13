@@ -91,19 +91,7 @@ const Header = () => {
                     <User size={16} />
                     <span>Profile</span>
                   </Link>
-                  <Link
-                    to="/notifications"
-                    className="flex items-center space-x-2 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    onClick={() => setShowDropdown(false)}
-                  >
-                    <Bell size={16} />
-                    <span>Notifications</span>
-                    {unreadCount > 0 && (
-                      <span className="ml-auto bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </Link>
+                  
                   <hr className="my-1" />
                   <button
                     onClick={logout}

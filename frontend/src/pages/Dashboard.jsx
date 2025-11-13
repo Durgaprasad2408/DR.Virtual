@@ -258,84 +258,114 @@ const Dashboard = () => {
         transition={{ delay: 0.5 }}
         className="card"
       >
-        <h2 className="text-responsive-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
+        <h2 className="text-responsive-lg font-semibold text-gray-800 mb-6">Quick Actions</h2>
         <div className="responsive-grid-3">
           {user?.role === 'patient' ? (
             <>
               <Link
                 to="/doctors"
-                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors text-center group touch-target"
+                className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 text-center touch-target"
               >
-                <Users
-                  className="mx-auto mb-2 text-gray-400 group-hover:text-primary-600"
-                  size={24}
-                />
-                <span className="text-responsive-sm font-medium text-gray-600 group-hover:text-primary-700">
-                  Find Doctors
-                </span>
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-600 transition-colors duration-300">
+                    <Users className="text-white" size={24} />
+                  </div>
+                  <span className="text-responsive-sm font-semibold text-gray-700 group-hover:text-blue-800 transition-colors duration-300">
+                    Find Doctors
+                  </span>
+                  <p className="text-xs text-gray-500 mt-1 group-hover:text-blue-600 transition-colors duration-300">
+                    Browse available healthcare providers
+                  </p>
+                </div>
               </Link>
               <Link
                 to="/med-vault"
-                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors text-center group touch-target"
+                className="group relative overflow-hidden bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 text-center touch-target"
               >
-                <FileText
-                  className="mx-auto mb-2 text-gray-400 group-hover:text-primary-600"
-                  size={24}
-                />
-                <span className="text-responsive-sm font-medium text-gray-600 group-hover:text-primary-700">
-                  My Records
-                </span>
+                <div className="absolute inset-0 bg-gradient-to-br from-green-400/10 to-green-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-600 transition-colors duration-300">
+                    <FileText className="text-white" size={24} />
+                  </div>
+                  <span className="text-responsive-sm font-semibold text-gray-700 group-hover:text-green-800 transition-colors duration-300">
+                    My Records
+                  </span>
+                  <p className="text-xs text-gray-500 mt-1 group-hover:text-green-600 transition-colors duration-300">
+                    Access your medical history
+                  </p>
+                </div>
               </Link>
               <Link
                 to="/appointments"
-                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors text-center group touch-target"
+                className="group relative overflow-hidden bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 text-center touch-target"
               >
-                <Calendar
-                  className="mx-auto mb-2 text-gray-400 group-hover:text-primary-600"
-                  size={24}
-                />
-                <span className="text-responsive-sm font-medium text-gray-600 group-hover:text-primary-700">
-                  View Appointments
-                </span>
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-600 transition-colors duration-300">
+                    <Calendar className="text-white" size={24} />
+                  </div>
+                  <span className="text-responsive-sm font-semibold text-gray-700 group-hover:text-purple-800 transition-colors duration-300">
+                    View Appointments
+                  </span>
+                  <p className="text-xs text-gray-500 mt-1 group-hover:text-purple-600 transition-colors duration-300">
+                    Manage your scheduled visits
+                  </p>
+                </div>
               </Link>
             </>
           ) : (
             <>
               <Link
                 to="/schedule"
-                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors text-center group touch-target"
+                className="group relative overflow-hidden bg-gradient-to-br from-indigo-50 to-indigo-100 border border-indigo-200 rounded-xl p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 text-center touch-target"
               >
-                <CalendarDays
-                  className="mx-auto mb-2 text-gray-400 group-hover:text-primary-600"
-                  size={24}
-                />
-                <span className="text-responsive-sm font-medium text-gray-600 group-hover:text-primary-700">
-                  Manage Schedule
-                </span>
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-400/10 to-indigo-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-indigo-600 transition-colors duration-300">
+                    <CalendarDays className="text-white" size={24} />
+                  </div>
+                  <span className="text-responsive-sm font-semibold text-gray-700 group-hover:text-indigo-800 transition-colors duration-300">
+                    Manage Schedule
+                  </span>
+                  <p className="text-xs text-gray-500 mt-1 group-hover:text-indigo-600 transition-colors duration-300">
+                    Set your availability
+                  </p>
+                </div>
               </Link>
               <Link
                 to="/patient-records"
-                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors text-center group touch-target"
+                className="group relative overflow-hidden bg-gradient-to-br from-teal-50 to-teal-100 border border-teal-200 rounded-xl p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 text-center touch-target"
               >
-                <Users
-                  className="mx-auto mb-2 text-gray-400 group-hover:text-primary-600"
-                  size={24}
-                />
-                <span className="text-responsive-sm font-medium text-gray-600 group-hover:text-primary-700">
-                  Patient Records
-                </span>
+                <div className="absolute inset-0 bg-gradient-to-br from-teal-400/10 to-teal-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-teal-600 transition-colors duration-300">
+                    <Users className="text-white" size={24} />
+                  </div>
+                  <span className="text-responsive-sm font-semibold text-gray-700 group-hover:text-teal-800 transition-colors duration-300">
+                    Patient Records
+                  </span>
+                  <p className="text-xs text-gray-500 mt-1 group-hover:text-teal-600 transition-colors duration-300">
+                    View patient information
+                  </p>
+                </div>
               </Link>
               <Link
                 to="/appointments"
-                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors text-center group touch-target"
+                className="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-xl p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 text-center touch-target"
               >
-                <Calendar
-                  className="mx-auto mb-2 text-gray-400 group-hover:text-primary-600"
-                  size={24}
-                />
-                <span className="text-responsive-sm font-medium text-gray-600 group-hover:text-primary-700">
-                  View Appointments
-                </span>
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-400/10 to-orange-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-orange-600 transition-colors duration-300">
+                    <Calendar className="text-white" size={24} />
+                  </div>
+                  <span className="text-responsive-sm font-semibold text-gray-700 group-hover:text-orange-800 transition-colors duration-300">
+                    View Appointments
+                  </span>
+                  <p className="text-xs text-gray-500 mt-1 group-hover:text-orange-600 transition-colors duration-300">
+                    Check upcoming consultations
+                  </p>
+                </div>
               </Link>
             </>
           )}
